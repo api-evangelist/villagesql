@@ -1,0 +1,53 @@
+generated: '2026-07-21'
+method: searched
+source: https://github.com/villagesql/villagesql-server/releases
+scheme: semver
+current: 0.0.5
+channels:
+  - stable (0.0.5)
+  - development-preview (0.0.6-dev)
+  - nightly
+entries:
+  - version: 0.0.5
+    date: '2026-07-10'
+    breaking: false
+    highlights:
+      - Variable-length custom types (persisted_length = -1) backed by VARBINARY
+      - VEF protocol v4 with veb_register_type_v4 registration entry point and VEB file version bump
+      - VDF result buffers grow to fit output; VDFs can declare a maximum result length (up to 16 MB)
+      - Parameterized types can supply default parameters via mutating resolve_params
+      - Fixed DROP TABLE with custom VDF generated columns
+  - version: 0.0.4
+    date: '2026-05-24'
+    breaking: true
+    highlights:
+      - Rebased on MySQL 8.4.9 LTS
+      - VEF SDK v3 declared stable; v4 opens as the unstable track; v1/v2 extensions rejected at load time and must migrate
+      - Preview capabilities system gates experimental extension capabilities
+      - InnoDB-based column storage for custom type data with INSTANT and INPLACE DDL
+      - Extensions can register background threads, issue SQL queries, and expose system/status variables
+      - Extension access to the MySQL keyring
+      - Custom type inference
+  - version: 0.0.3
+    date: '2026-03-24'
+    breaking: false
+    highlights:
+      - Type parameters (TYPE('key=value,...')) plumbed through encode, decode, hash, compare, VDFs, persistence
+      - Initial SDK documentation and idiomatic C++ wrappers for type operations
+      - Deterministic VDFs enabling optimizer folding; VDFs as custom type operations
+      - VDFs usable in CHECK constraints and generated columns
+      - Custom types work with temporary tables and window functions
+  - version: 0.0.2
+    date: '2026-02-17'
+    breaking: false
+    highlights:
+      - Prepared statement support for custom types
+      - COUNT(DISTINCT), MIN, MAX aggregates on custom types
+      - Unqualified VDF lookup (no extension prefix required)
+      - Extension symbol isolation and InnoDB crash-recovery fixes
+      - Ubuntu 24.04+ build fixes
+notes: >
+  Dated release notes are published as GitHub Releases on
+  villagesql/villagesql-server; there is no separate /changelog page on
+  villagesql.com (404). Versioning follows semver per the published version
+  policy at https://villagesql.com/docs/mysql-8.4/0.0.5/version-policy.

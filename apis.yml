@@ -1,8 +1,15 @@
 aid: villagesql
 name: VillageSQL
-description: 'VillageSQL is a company surfaced as a portfolio company of homebrew and added to the API
-  Evangelist network as a stub for enrichment. Sector: ai. This profile is a lead awaiting the enrichment
-  pipeline.'
+description: >-
+  VillageSQL is an open-source, drop-in replacement for MySQL 8.4 that adds an
+  extension framework (VEF) for custom SQL functions, custom data types, and
+  custom indexes — capabilities MySQL lacks natively. Extensions install at
+  runtime via SQL (INSTALL EXTENSION) with no server restart, and official
+  extensions cover AI prompting and embeddings, UUIDs, crypto, network address
+  types, HTTP clients, vectors, trigram search, and an embedded REST server. It
+  is distributed as a server binary, Docker image, and one-line installer, with
+  a Rust VEF SDK, C++/Rust extension templates, and provider-published agent
+  skills.
 url: https://raw.githubusercontent.com/api-evangelist/villagesql/refs/heads/main/apis.yml
 x-type: company
 x-source: vc-portfolio
@@ -10,12 +17,30 @@ x-backed-by:
 - homebrew
 x-tier: stub
 x-tier-reason: portfolio-lead
+accessModel:
+  pricing: unknown
+  onboarding: unknown
+  trial: false
+  try_now: false
+  public: false
+  label: Unknown
+  confidence: low
+  source: []
+  generated: '2026-07-22'
+  method: derived
 specificationVersion: '0.20'
 created: '2026-07-17'
-modified: '2026-07-17'
+modified: '2026-07-21'
+image: https://villagesql.com/assets/pelican.png
 tags:
 - Company
 - Ai
+- Database
+- MySQL
+- SQL
+- Open Source
+- Extensions
+- Developer Tools
 apis: []
 maintainers:
 - FN: Kin Lane
@@ -25,3 +50,42 @@ maintainers:
 common:
 - type: Website
   url: https://villagesql.com
+- type: Documentation
+  url: https://villagesql.com/docs
+- type: GettingStarted
+  url: https://villagesql.com/docs/mysql-8.4/0.0.5/quickstart
+- type: APIReference
+  url: https://villagesql.com/docs/mysql-8.4/0.0.6-dev/extension-api-reference
+- type: Blog
+  url: https://villagesql.com/blog
+- type: GitHubOrganization
+  url: https://github.com/villagesql
+- type: Roadmap
+  url: https://villagesql.com/roadmap
+- type: Support
+  url: https://villagesql.com/contact
+- type: TermsOfService
+  url: https://villagesql.com/terms
+- type: PrivacyPolicy
+  url: https://villagesql.com/privacy
+- type: MediaKit
+  url: https://villagesql.com/media-kit
+- type: Packages
+  url: packages/villagesql-packages.yml
+- type: SDKs
+  url: packages/villagesql-packages.yml
+- type: Lifecycle
+  url: lifecycle/villagesql-lifecycle.yml
+- type: ChangeLog
+  url: changelog/villagesql-changelog.yml
+- type: LLMsTxt
+  url: llms/villagesql-llms.txt
+- type: AgentSkill
+  url: skills/_index.yml
+- type: DomainSecurity
+  url: security/villagesql-domain-security.yml
+x-enrichment:
+  date: '2026-07-21'
+  status: enriched
+  artifacts_added: 8
+  pass: local-v1

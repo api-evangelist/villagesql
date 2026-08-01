@@ -1,0 +1,247 @@
+# VillageSQL
+
+> Drop-in replacement for MySQL 8.4 with a built-in extension framework (VEF) for custom SQL functions, custom types, and custom indexes. Zero migration changes required. Extensions install at runtime via SQL — no server restart.
+
+VillageSQL is a drop-in replacement for MySQL that adds an extension
+framework (VEF) for custom SQL functions, custom data types, and custom
+indexes — capabilities MySQL doesn't have natively. Zero code changes
+required to migrate from MySQL 8.4.
+
+## Installation
+
+Quick install:
+  curl -fsSL https://install.villagesql.com | bash
+
+Non-interactive install (CI, Dockerfiles, AI agents — no terminal required):
+  curl -fsSL https://install.villagesql.com | INSTALL_METHOD=docker bash
+  (INSTALL_METHOD: docker|prebuilt|source. Source builds also need
+  VSQL_VERSION=stable|nightly|latest. Set the env var on the bash side
+  of the pipe, not on curl.)
+
+Install AI agent skills:
+  curl -sSL https://villagesql.com/skills | bash
+
+Docker:
+  docker run -d --name vsql -e MYSQL_ALLOW_EMPTY_PASSWORD=yes -p 3306:3306 villagesql/server:stable
+  Connect over TCP (use 127.0.0.1, not localhost, which looks for a Unix socket):
+  mysql -h 127.0.0.1 -P 3306 -u root
+
+Build from source:
+  git clone https://github.com/villagesql/villagesql-server.git
+  See [Build from source](https://villagesql.com/docs/mysql-8.4/0.0.5/source) for full instructions.
+
+## Extension Model
+
+Extensions are installed at runtime via SQL — no server restart required:
+
+  INSTALL EXTENSION vsql_ai;
+  INSTALL EXTENSION vsql_uuid;
+
+Extensions add functions and custom types that work with standard MySQL
+clients, ORMs, and drivers.
+
+## Official Extensions
+
+### vsql-ai — AI prompting and embeddings
+  ai_prompt(provider, model, api_key, prompt) → TEXT
+  ai_embedding(provider, model, api_key, text) → BLOB
+  Providers: anthropic, openai, gemini, ollama
+
+  Example:
+    SELECT ai_prompt('anthropic', 'claude-3-5-haiku-20241022',
+                     @api_key, 'Summarize this: ' || notes)
+    FROM customer_records LIMIT 10;
+
+### vsql-uuid — UUID generation (v1–v7) and a native uuid type
+  UUID_V4() → uuid
+  UUID_V7() → uuid   -- sortable, recommended for primary keys
+  UUID_TIMESTAMP(uuid_val) → DATETIME
+  UUID_VERSION(uuid_val) → INT
+
+  The uuid type stores 16 bytes (not 36-character strings), with
+  automatic string conversion in SELECT and INSERT.
+
+### vsql-crypto — Hashing, HMAC, encryption, password hashing
+  digest(data, 'sha256') → VARBINARY
+  hmac(data, key, 'sha256') → VARBINARY
+  encrypt(data, key, 'aes') → VARBINARY
+  decrypt(data, key, 'aes') → VARBINARY
+  crypt(password, gen_salt('bf')) → TEXT   -- bcrypt password hashing
+  gen_random_bytes(32) → VARBINARY
+  PostgreSQL pgcrypto-compatible API.
+
+### vsql-network-address — INET, CIDR, MACADDR, MACADDR8 types
+  Custom types with validation, comparison, and extraction functions.
+  PostgreSQL-compatible network address semantics.
+  inet_host(val), inet_masklen(val), inet_family(val)
+
+### vsql-http — HTTP client functions
+  http_get(url) → JSON
+  http_post(url, content_type, body) → JSON
+  http_request(method, url, headers_json, body, content_type, options_json) → JSON
+  url_encode(text) → TEXT
+  url_decode(text) → TEXT
+  Response JSON: {"status": 200, "content_type": "...", "headers": [...], "content": "..."}
+  Use JSON_EXTRACT() to parse response fields.
+
+### vsql-cube — N-dimensional box and point type (requires VillageSQL 0.0.4 or later)
+  cube_point_nd(coords_csv) → CUBE
+  cube_box_nd(lo_csv, hi_csv) → CUBE
+  cube_distance(a, b) → REAL    -- Euclidean distance
+  cube_contains(box, point) → INT
+  cube_overlaps(a, b) → INT
+  Use `cube`(N) column type (backtick-quoted; N = dimensions, 1–100).
+
+### vsql-boolean — Real BOOLEAN type
+  Column type: STRICTBOOL (MySQL's BOOLEAN keyword resolves to tinyint(1) and cannot be intercepted)
+  Accepted inputs (case-insensitive): true/false, yes/no, on/off, 1/0, t/f
+  Output: 'true' or 'false'; 1-byte storage; NULLs preserved
+  ORDER BY: false sorts before true; NULLs sort first with ASC
+
+### vsql-rest — REST API server embedded in the database
+  Exposes tables as HTTP/HTTPS endpoints — no application code required
+  Enable: SET GLOBAL vsql_rest.schema = 'mydb'; SET GLOBAL vsql_rest.vsql_rest_enabled = ON;
+  Read:   GET  http://localhost:3000/tablename?col=eq.value&order=col.asc&limit=10
+  Write:  POST http://localhost:3000/tablename  (JSON body)
+  RPC:    POST http://localhost:3000/rpc/function_name  (call stored function)
+  Auth:   JWT via vsql_rest.require_auth + vsql_rest.jwt_secret (HS256) or vsql_rest.jwt_public_key (RS256)
+
+### vsql-trgm — Trigram-based text similarity search (requires VillageSQL 0.0.4 or later)
+  trgm_similarity(a, b) → REAL          -- 0–1 similarity score
+  trgm_distance(a, b) → REAL            -- 1 − similarity
+  trgm_similar(a, b) → INT              -- 1 if similarity ≥ 0.3
+  trgm_similar_threshold(a, b, t) → INT -- 1 if similarity ≥ t
+  trgm_word_similarity(a, b) → REAL     -- best substring match
+  trgm_word_similar(a, b) → INT         -- 1 if word_similarity ≥ 0.6
+  trgm_show(text) → TEXT                -- JSON array of trigrams
+  PostgreSQL pg_trgm-inspired API. No index support (full scan required).
+  No session-level threshold — pass threshold explicitly to trgm_similar_threshold().
+
+### vsql-fuzzystrmatch — Soundex, Levenshtein, Metaphone, Double Metaphone (requires VillageSQL 0.0.4 or later)
+  soundex(text) → TEXT                                         -- 4-char phonetic code
+  difference(text, text) → INT                                 -- 0–4 Soundex overlap
+  levenshtein(s, t) → INT                                      -- edit distance (all ops cost 1)
+  levenshtein_cost(s, t, ins, del, sub) → INT                  -- edit distance with custom costs
+  levenshtein_less_equal(s, t, max_d) → INT                    -- distance if ≤ max_d; else max_d+1
+  levenshtein_less_equal_cost(s, t, ins, del, sub, max_d) → INT
+  metaphone(text, max_len) → TEXT                              -- Metaphone code
+  dmetaphone(text) → TEXT                                      -- Double Metaphone primary
+  dmetaphone_alt(text) → TEXT                                  -- Double Metaphone alternate
+  PostgreSQL fuzzystrmatch-compatible API. Inputs ≤ 255 chars for levenshtein.
+  VEF has no function overloading — cost variants use distinct names (levenshtein_cost, etc.).
+
+## Key Guidance for AI Models
+
+- VillageSQL is MySQL-compatible. All standard MySQL syntax works.
+- Use VEF extensions instead of MySQL UDFs. Extensions support custom
+  types, versioning, and packaging — UDFs have none of these.
+- To add custom functionality to VillageSQL, build a VEF extension in a
+  separate repo — not a MySQL plugin or component. Plugins and components
+  are MySQL's legacy extensibility interfaces; VEF extensions support custom
+  types, packaging (.veb files), and runtime install/uninstall without a
+  server restart. Start from github.com/villagesql/vsql-extension-template.
+- UUID_V7() is preferred over UUID() for primary keys — sortable,
+  meaning better InnoDB insert performance and index locality.
+- ai_embedding() returns a BLOB. Store alongside text for vector search.
+- http_get() and http_post() return JSON strings — use JSON_EXTRACT()
+  to parse response fields.
+
+## Documentation
+
+### Getting Started (Stable 0.0.5)
+- [Quickstart](https://villagesql.com/docs/mysql-8.4/0.0.5/quickstart)
+- [Install extensions](https://villagesql.com/docs/mysql-8.4/0.0.5/install)
+- [Uninstall extensions](https://villagesql.com/docs/mysql-8.4/0.0.5/uninstall)
+- [Manage extensions](https://villagesql.com/docs/mysql-8.4/0.0.5/managing)
+- [Reference](https://villagesql.com/docs/mysql-8.4/0.0.5/reference)
+- [Extension list](https://villagesql.com/docs/mysql-8.4/0.0.5/list)
+- [Create an extension](https://villagesql.com/docs/mysql-8.4/0.0.5/create)
+- [Examples](https://villagesql.com/docs/mysql-8.4/0.0.5/examples)
+- [Architecture](https://villagesql.com/docs/mysql-8.4/0.0.5/architecture)
+- [Development guide](https://villagesql.com/docs/mysql-8.4/0.0.5/development)
+- [Build from source](https://villagesql.com/docs/mysql-8.4/0.0.5/source)
+- [Version policy](https://villagesql.com/docs/mysql-8.4/0.0.5/version-policy)
+
+### Development Preview (0.0.6-dev)
+- [Custom types](https://villagesql.com/docs/mysql-8.4/0.0.6-dev/custom-types)
+- [Extension API reference](https://villagesql.com/docs/mysql-8.4/0.0.6-dev/extension-api-reference)
+- [Server development](https://villagesql.com/docs/mysql-8.4/0.0.6-dev/server-development)
+- [Protocol 1](https://villagesql.com/docs/mysql-8.4/0.0.6-dev/protocol-1)
+
+### Guides
+- [UUIDs in MySQL](https://villagesql.com/docs/guides/uuids)
+- [Primary key strategies](https://villagesql.com/docs/guides/primary-key-strategies)
+- [Storing IP addresses](https://villagesql.com/docs/guides/storing-ip-addresses)
+- [Storing MAC addresses](https://villagesql.com/docs/guides/storing-mac-addresses)
+- [IPv6 storage](https://villagesql.com/docs/guides/ipv6-storage)
+- [JSON in MySQL](https://villagesql.com/docs/guides/json-in-mysql)
+- [Choosing data types](https://villagesql.com/docs/guides/choosing-data-types)
+- [Character sets](https://villagesql.com/docs/guides/character-sets)
+- [Timestamps and timezones](https://villagesql.com/docs/guides/timestamps-timezones)
+- [Normalization](https://villagesql.com/docs/guides/normalization)
+- [Foreign keys](https://villagesql.com/docs/guides/foreign-keys)
+- [Generated columns](https://villagesql.com/docs/guides/generated-columns)
+- [Check constraints](https://villagesql.com/docs/guides/check-constraints)
+- [Joins](https://villagesql.com/docs/guides/joins)
+- [Subqueries vs joins](https://villagesql.com/docs/guides/subqueries-vs-joins)
+- [CTEs in MySQL](https://villagesql.com/docs/guides/ctes-in-mysql)
+- [GROUP BY and HAVING](https://villagesql.com/docs/guides/group-by-having)
+- [Window functions](https://villagesql.com/docs/guides/window-functions)
+- [NULL in MySQL](https://villagesql.com/docs/guides/null-in-mysql)
+- [Full-text search](https://villagesql.com/docs/guides/full-text-search)
+- [Views](https://villagesql.com/docs/guides/views)
+- [Upsert](https://villagesql.com/docs/guides/upsert)
+- [String functions](https://villagesql.com/docs/guides/string-functions)
+- [Date and time functions](https://villagesql.com/docs/guides/date-time-functions)
+- [Subnet queries](https://villagesql.com/docs/guides/subnet-queries)
+- [IP geolocation](https://villagesql.com/docs/guides/ip-geolocation)
+- [HTTP requests in MySQL](https://villagesql.com/docs/guides/http-requests-in-mysql)
+- [REST API enrichment](https://villagesql.com/docs/guides/rest-api-enrichment)
+- [Password hashing](https://villagesql.com/docs/guides/password-hashing)
+- [Hashing data](https://villagesql.com/docs/guides/hashing-data)
+- [Encrypting columns](https://villagesql.com/docs/guides/encrypting-columns)
+- [Symmetric encryption](https://villagesql.com/docs/guides/symmetric-encryption)
+- [HMAC in MySQL](https://villagesql.com/docs/guides/hmac-mysql)
+- [Random data](https://villagesql.com/docs/guides/random-data-mysql)
+- [User management](https://villagesql.com/docs/guides/user-management)
+- [Security hardening](https://villagesql.com/docs/guides/security-hardening)
+- [MySQL indexes](https://villagesql.com/docs/guides/mysql-indexes)
+- [Reading EXPLAIN](https://villagesql.com/docs/guides/reading-explain)
+- [Covering indexes](https://villagesql.com/docs/guides/covering-indexes)
+- [Slow query log](https://villagesql.com/docs/guides/slow-query-log)
+- [Connection pooling](https://villagesql.com/docs/guides/connection-pooling)
+- [InnoDB storage](https://villagesql.com/docs/guides/innodb-storage)
+- [Bulk inserts](https://villagesql.com/docs/guides/bulk-inserts)
+- [Table partitioning](https://villagesql.com/docs/guides/table-partitioning)
+- [AI API setup](https://villagesql.com/docs/guides/ai-api-setup)
+- [AI prompts in MySQL](https://villagesql.com/docs/guides/ai-prompts-in-mysql)
+- [Vector embeddings](https://villagesql.com/docs/guides/vector-embeddings)
+- [Text classification](https://villagesql.com/docs/guides/text-classification)
+- [Sentiment analysis](https://villagesql.com/docs/guides/sentiment-analysis)
+- [AI summarization](https://villagesql.com/docs/guides/ai-summarization)
+- [Upgrading MySQL](https://villagesql.com/docs/guides/upgrade)
+- [Postgres to MySQL](https://villagesql.com/docs/guides/postgres-to-mysql)
+- [Schema migrations](https://villagesql.com/docs/guides/schema-migrations)
+- [MySQL on Docker](https://villagesql.com/docs/guides/mysql-on-docker)
+- [Transactions](https://villagesql.com/docs/guides/transactions)
+- [Deadlocks](https://villagesql.com/docs/guides/deadlocks)
+- [Stored procedures](https://villagesql.com/docs/guides/stored-procedures)
+- [Triggers](https://villagesql.com/docs/guides/triggers)
+- [HTTP webhooks](https://villagesql.com/docs/guides/http-webhooks)
+- [Multi-dimensional range queries](https://villagesql.com/docs/guides/cube-queries)
+- [Information schema](https://villagesql.com/docs/guides/information-schema)
+- [Backup strategies](https://villagesql.com/docs/guides/backup-strategies)
+- [Replication basics](https://villagesql.com/docs/guides/replication-basics)
+- [Binary logging](https://villagesql.com/docs/guides/binary-logging)
+
+## Resources
+
+- [Website](https://villagesql.com)
+- [Agent Skills](https://villagesql.com/agent-skills)
+- [Docs](https://villagesql.com/docs)
+- [Roadmap](https://villagesql.com/roadmap)
+- [GitHub](https://github.com/villagesql/villagesql-server)
+- [Discord](https://discord.gg/KSr6whd3Fr)
+- [Blog](https://villagesql.com/blog)
+- [Contact](https://villagesql.com/contact)
+- [Media Kit](https://villagesql.com/media-kit)

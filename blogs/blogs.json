@@ -1,0 +1,14 @@
+{
+  "repo": "villagesql",
+  "feeds": [
+    {
+      "source": "https://villagesql.com/docs/mysql-8.4/0.0.6-dev/extension-api-reference",
+      "feed_url": "https://villagesql.com/docs/mysql-8.4/0.0.6-dev/extension-api-reference",
+      "title": "",
+      "saved": 0,
+      "method": "none"
+    }
+  ],
+  "post_count": 0,
+  "fetched": "2026-08-01T15:49:00Z"
+}

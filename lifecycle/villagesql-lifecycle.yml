@@ -1,0 +1,22 @@
+generated: '2026-07-21'
+method: searched
+source: https://villagesql.com/docs/mysql-8.4/0.0.5/version-policy
+versioning:
+  scheme: semver
+  current: 0.0.5
+  channels:
+    - name: stable
+      version: 0.0.5
+    - name: development-preview
+      version: 0.0.6-dev
+    - name: nightly
+  base: MySQL 8.4 (drop-in replacement)
+  docs: https://villagesql.com/docs/mysql-8.4/0.0.5/version-policy
+roadmap: https://villagesql.com/roadmap
+status_page: null
+sla: null
+deprecated_operations: []
+notes: >
+  VillageSQL is a self-hosted open-source database (MySQL 8.4 fork), not a hosted
+  API, so there is no public status page or uptime SLA. Version policy and roadmap
+  are published; cloud offerings are listed as "Coming Soon".

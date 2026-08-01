@@ -1,0 +1,18 @@
+generated: '2026-07-21'
+method: searched
+source: https://github.com/villagesql/villagesql-skills
+description: >
+  Provider-published Agent Skills for VillageSQL, installed via
+  `curl -sSL https://villagesql.com/skills | bash`. Supports Claude Code,
+  Gemini CLI, agy, Codex, Cursor, Amp, Kiro, OpenCode, and OpenClaw.
+skills:
+  - file: villagesql-extension-builder.md
+    name: vsql-extension-builder
+    api: null
+    grounding: VillageSQL Extension Framework (VEF) SDK headers + SQL
+    source: https://github.com/villagesql/villagesql-skills/blob/main/skills/vsql-extension-builder/SKILL.md
+    description: >
+      Builds a VillageSQL extension end-to-end through a 7-phase persona-driven
+      workflow (requirements, feasibility, scaffold, implementation, CTO review,
+      UAT, documentation). Supports C++ (default) and Rust. Discovers the current
+      VEF API from live SDK headers at runtime — no hardcoded API names.

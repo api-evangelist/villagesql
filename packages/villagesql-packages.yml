@@ -1,0 +1,47 @@
+generated: '2026-07-21'
+method: searched
+source: https://github.com/villagesql
+packages:
+  - language: rust
+    registry: github
+    name: vsql-rust-sdk
+    url: https://github.com/villagesql/vsql-rust-sdk
+    install: cargo add --git https://github.com/villagesql/vsql-rust-sdk
+    official: true
+    description: First-party Rust SDK for building VillageSQL extensions (VEF) in Rust; ships the `cargo vsql` subcommand (install/test) used by the extension toolchain.
+  - language: c++
+    registry: github
+    name: vsql-extension-template
+    url: https://github.com/villagesql/vsql-extension-template
+    install: gh repo create <owner>/<ext> --template villagesql/vsql-extension-template --clone
+    official: true
+    description: Official C++ extension scaffold/template (the default VEF implementation language).
+  - language: rust
+    registry: github
+    name: vsql-extension-template-rust
+    url: https://github.com/villagesql/vsql-extension-template-rust
+    install: git clone https://github.com/villagesql/vsql-extension-template-rust
+    official: true
+    description: Official Rust extension scaffold/template.
+  - language: docker
+    registry: dockerhub
+    name: villagesql/server
+    url: https://hub.docker.com/r/villagesql/server
+    install: docker run -d --name vsql -e MYSQL_ALLOW_EMPTY_PASSWORD=yes -p 3306:3306 villagesql/server:stable
+    official: true
+    description: Official VillageSQL server image (drop-in MySQL 8.4 replacement). Tags include stable/nightly/latest.
+  - language: shell
+    registry: villagesql.com
+    name: install.villagesql.com
+    url: https://install.villagesql.com
+    install: curl -fsSL https://install.villagesql.com | bash
+    official: true
+    description: One-line installer. Non-interactive INSTALL_METHOD=docker|prebuilt|source (+ VSQL_VERSION=stable|nightly|latest for source builds).
+notes: >
+  VillageSQL is an open-source MySQL 8.4 fork distributed as a server binary/Docker image,
+  not a hosted API, so there are no npm/PyPI/Maven client libraries for a REST product.
+  The first-party "SDK" is the Rust VEF SDK (vsql-rust-sdk) for authoring database
+  extensions; the C++/Rust extension templates and the server Docker image are the
+  primary distribution artifacts. Extensions themselves live in separate repos
+  (vsql-ai, vsql-crypto, vsql-uuid, vsql-vector, vsql-http, vsql-network-address,
+  vsql-oauth2, vsql-stat-core, etc.).
