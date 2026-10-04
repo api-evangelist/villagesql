@@ -49,7 +49,7 @@ tags:
 - Database
 - MySQL
 - SQL
-- Open-Source
+- Open Source
 - Extensions
 - Developer Tools
 tags_raw:
@@ -61,6 +61,7 @@ tags_raw:
 - Open Source
 - Extensions
 - Developer Tools
+- Open-Source
 apis: []
 maintainers:
 - FN: Kin Lane
